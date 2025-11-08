@@ -6,7 +6,7 @@ import { useMidiStore } from "@/core/stores/useMidiStore";
 const MidiIcon = () => (
   <svg
     aria-hidden="true"
-    className="w-3.5 h-3.5"
+    className="h-3.5 w-3.5"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -20,7 +20,11 @@ const MidiIcon = () => (
   </svg>
 );
 
-export const TopBarMidiControls = () => {
+interface TopBarMidiControlsProps {
+  className?: string;
+}
+
+export const TopBarMidiControls = ({ className }: TopBarMidiControlsProps) => {
   const midiAccessState = useMidiStore((s) => s.midiAccessState);
   const midiAccessError = useMidiStore((s) => s.midiAccessError);
   const inputs = useMidiStore((s) => s.devices);
@@ -38,13 +42,16 @@ export const TopBarMidiControls = () => {
     triggerMidiAccessRequest();
   };
 
+  const baseClass = "flex items-center gap-2";
+  const containerClass = className ? `${baseClass} ${className}` : baseClass;
+
   return (
-    <div className="ml-auto flex items-center gap-2">
+    <div className={containerClass}>
       <button
         type="button"
         onClick={handleConnectClick}
         disabled={midiAccessState === "requesting"}
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-transparent transition-fast hover:border-subtle hover:bg-layer-1 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-zinc-400 transition-colors hover:border-white/15 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
         style={{ color: statusColor }}
         title="Connect MIDI"
       >
@@ -54,11 +61,8 @@ export const TopBarMidiControls = () => {
         <select
           value={selectedInputId || ""}
           onChange={(e) => selectInput(e.target.value || undefined)}
-          className="rounded-full border border-subtle bg-layer-1/85 px-4 py-1.5 text-xs font-semibold text-primary shadow-layer-sm transition-fast hover:border-primary/40 focus-ring-primary"
-          style={{
-            color: selectedInputId ? "var(--text-primary)" : "var(--text-tertiary)",
-            minWidth: "12rem",
-          }}
+          className="min-w-[10rem] rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30"
+          style={{ color: selectedInputId ? "var(--text-primary)" : "var(--text-tertiary)" }}
         >
           <option value="">Choose MIDI</option>
           {inputs.map((input) => (

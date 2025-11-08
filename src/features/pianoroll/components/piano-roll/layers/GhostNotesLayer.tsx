@@ -43,7 +43,9 @@ export const GhostNotesLayer = ({
     ctx.clearRect(0, 0, width, height);
 
     const trackColorMap = new Map<string, string>();
-    tracks.forEach((track) => trackColorMap.set(track.id, track.color));
+    tracks.forEach((track) => {
+      trackColorMap.set(track.id, track.color);
+    });
 
     const viewLeft = scrollLeft;
     const viewRight = viewLeft + viewportWidth;

@@ -109,7 +109,6 @@ export const usePianoRollInteractions = ({
     keyHeight,
     msPerBeat,
     pixelsPerBeat,
-    quantizationBeats,
     containerRef,
     gridContainerRef,
     updateClips,
@@ -173,7 +172,6 @@ export const usePianoRollInteractions = ({
     setPlayheadMs,
     isPlaying,
     pause,
-    viewportWidth,
     scrollLeft,
     onScrubStart: () => {
       modeRef.current = "scrub";
@@ -391,6 +389,7 @@ export const usePianoRollInteractions = ({
       createNoteAt,
       deleteNoteAt,
       clips,
+      pianoKeys,
     ],
   );
 

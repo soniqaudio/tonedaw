@@ -82,12 +82,12 @@ export function AppShell() {
   }, [activeView]);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-zinc-950 font-sans text-zinc-50">
+    <div className="flex h-screen w-full flex-col bg-zinc-950 font-sans text-zinc-50">
       {isPianoRollActive ? <KeyboardInput /> : null}
-      <Sidebar />
-      <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
-        <TopBar isPlaying={isPlaying} onPlay={handlePlay} onStop={handleStop} />
-        <main className="relative flex flex-1 min-h-0 overflow-hidden bg-zinc-950/80">
+      <TopBar isPlaying={isPlaying} onPlay={handlePlay} onStop={handleStop} />
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        <Sidebar />
+        <main className="relative flex flex-1 min-h-0 overflow-hidden bg-zinc-950/90">
           <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/5 via-transparent to-transparent mix-blend-overlay" />
           <div className="relative z-10 flex-1 min-h-0 overflow-hidden">{viewComponent}</div>
         </main>

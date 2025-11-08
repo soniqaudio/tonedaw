@@ -22,7 +22,6 @@ interface MovementConfig {
   keyHeight: number;
   msPerBeat: number;
   pixelsPerBeat: number;
-  quantizationBeats: number;
   containerRef: React.RefObject<HTMLDivElement>;
   gridContainerRef: React.RefObject<HTMLDivElement>;
   updateClips: (
@@ -62,7 +61,6 @@ export const useNoteMovement = ({
   keyHeight,
   msPerBeat,
   pixelsPerBeat,
-  quantizationBeats,
   containerRef,
   gridContainerRef,
   updateClips,
@@ -125,16 +123,7 @@ export const useNoteMovement = ({
       state.appliedDeltaMs = deltaMs;
       state.appliedDeltaNotes = deltaNotes;
     },
-    [
-      gridContainerRef,
-      containerRef,
-      msPerBeat,
-      pixelsPerBeat,
-      quantizationBeats,
-      keyHeight,
-      pianoKeys,
-      updateClips,
-    ],
+    [gridContainerRef, containerRef, msPerBeat, pixelsPerBeat, keyHeight, pianoKeys, updateClips],
   );
 
   const handlePointerUp = useCallback(
@@ -150,7 +139,7 @@ export const useNoteMovement = ({
         container.style.cursor = "crosshair";
       }
     },
-    [containerRef, gridContainerRef, handlePointerMove],
+    [containerRef, handlePointerMove],
   );
 
   const tryBeginMove = useCallback(

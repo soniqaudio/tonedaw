@@ -117,7 +117,7 @@ export const useNoteResize = ({
     if (containerRef.current) {
       containerRef.current.style.cursor = "crosshair";
     }
-  }, [handleResizeMove, containerRef]);
+  }, [handleResizeMove, containerRef, onResizeEnd]);
 
   // Start resizing a clip
   const startResize = useCallback(
@@ -168,7 +168,7 @@ export const useNoteResize = ({
         containerRef.current.style.cursor = "crosshair";
       }
     }
-  }, [handleResizeMove, handleResizeUp, containerRef]);
+  }, [handleResizeMove, handleResizeUp, containerRef, onResizeEnd]);
 
   const isResizing = useCallback(() => resizingRef.current !== null, []);
 

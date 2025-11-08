@@ -11,7 +11,6 @@ interface UseTimelineScrubProps {
   setPlayheadMs: (ms: number) => void;
   isPlaying: boolean;
   pause: () => void;
-  viewportWidth: number;
   scrollLeft: number;
   onScrubStart?: () => void;
   onScrubEnd?: () => void;
@@ -27,7 +26,6 @@ export const useTimelineScrub = ({
   setPlayheadMs,
   isPlaying,
   pause,
-  viewportWidth,
   scrollLeft,
   onScrubStart,
   onScrubEnd,
@@ -68,7 +66,6 @@ export const useTimelineScrub = ({
       containerRef,
       timelineContainerRef,
       gridContainerRef,
-      viewportWidth,
       scrollLeft,
     ],
   );
