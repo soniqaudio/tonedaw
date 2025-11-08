@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { audioEngine } from "@/core/audio/audioEngine";
-import { playbackController } from "@/core/playback/playbackController";
 import { useMidiStore } from "@/core/stores/useMidiStore";
 import { useMusicTheoryStore } from "@/core/stores/useMusicTheoryStore";
 import { useTransportStore } from "@/core/stores/useTransportStore";
@@ -33,6 +32,7 @@ export default function KeyboardInput() {
   const recordArm = useMidiStore((state) => state.recordArm);
   const computerInputEnabled = useMidiStore((state) => state.computerInputEnabled);
   const playheadMs = useTransportStore((state) => state.playheadMs);
+  const isPlaying = useTransportStore((state) => state.isPlaying);
   const rootNote = useMusicTheoryStore((state) => state.rootNote);
   const scale = useMusicTheoryStore((state) => state.scale);
   const selectedInputId = useMidiStore((state) => state.selectedInputId);
@@ -223,24 +223,20 @@ export default function KeyboardInput() {
   useEffect(() => {
     const midiActions = useMidiStore.getState().actions;
 
-    if (recordArm && !isRecording) {
+    if (recordArm && isPlaying && !isRecording) {
       const startMs = playheadMs;
       clearRecordingPreviews();
       recorder.start(startMs);
       lastEventCountRef.current = 0;
       midiActions.setRecording(true);
-
-      const clipsSnapshot = useMidiStore.getState().clips;
-      void playbackController.play(clipsSnapshot, startMs).catch(() => {});
-    } else if (!recordArm && isRecording) {
+    } else if (isRecording && (!recordArm || !isPlaying)) {
       recorder.stop();
       recorder.clear();
       lastEventCountRef.current = 0;
       midiActions.setRecording(false);
-      playbackController.pause();
       clearRecordingPreviews();
     }
-  }, [recordArm, isRecording, playheadMs, recorder, clearRecordingPreviews]);
+  }, [recordArm, isRecording, isPlaying, playheadMs, recorder, clearRecordingPreviews]);
 
   // Live recording - append new events as they happen
   useEffect(() => {
