@@ -212,20 +212,20 @@ export default function TopBar({ isPlaying, onPlay, onStop }: TopBarProps) {
   };
 
   const controlBlock =
-    "flex items-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.03] px-2.5 py-1.5";
+    "flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.015] px-3 py-1.5";
   const iconButtonClass = (active = false) =>
-    `flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
+    `flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${
       active
-        ? "border-white/30 bg-white/10 text-white"
-        : "border-transparent text-zinc-400 hover:border-white/15 hover:bg-white/5 hover:text-white"
+        ? "border-white/20 bg-white/10 text-white"
+        : "border-transparent text-zinc-400 hover:border-white/10 hover:bg-white/5 hover:text-white"
     }`;
 
   const playButtonClass =
-    "flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white hover:bg-white/20";
+    "flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition-colors hover:bg-white/20";
 
   const recordButtonClass = recordArm
-    ? "flex h-9 w-9 items-center justify-center rounded-xl border border-red-500/50 bg-red-500/20 text-red-200"
-    : "flex h-9 w-9 items-center justify-center rounded-xl border border-transparent text-zinc-400 hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-200";
+    ? "flex h-9 w-9 items-center justify-center rounded-lg border border-red-500/50 bg-red-500/20 text-red-200"
+    : "flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-zinc-400 hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-200";
 
   const settingsOptions = [
     {
@@ -270,281 +270,285 @@ export default function TopBar({ isPlaying, onPlay, onStop }: TopBarProps) {
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/5 bg-[rgba(5,5,8,0.95)] text-sm text-zinc-200 backdrop-blur-2xl">
-      <div className="flex h-16 items-center gap-4 px-4">
-        <div className="flex min-w-[200px] items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-sm font-semibold text-white">
-              tn
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-white">tone</p>
-              <p className="text-xs text-zinc-500">Untitled Project</p>
-            </div>
-          </div>
-          <div className="hidden items-center gap-1 md:flex">
-            <MenuDropdown label="File" items={fileMenuItems} />
-            <MenuDropdown label="Edit" items={editMenuItems} />
-          </div>
-        </div>
-
-        <div className="flex flex-1 items-center gap-3 overflow-hidden">
-          <div className={`${controlBlock} hidden lg:flex`}>
-            {VIEW_OPTIONS.map((option) => {
-              const isActive = activeView === option.id;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => setActiveView(option.id)}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    isActive ? "bg-white/10 text-white" : "text-zinc-400 hover:text-white"
-                  }`}
-                  aria-pressed={isActive}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-          <div className="lg:hidden">
-            <select
-              value={activeView}
-              onChange={(event) => setActiveView(event.target.value as WorkspaceView)}
-              className="rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30"
-            >
-              {VIEW_OPTIONS.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className={`${controlBlock} flex-1 justify-center`}>
-            <button type="button" onClick={handleStop} className={iconButtonClass()} title="Stop">
-              <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="7" y="7" width="10" height="10" rx="1" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={handlePlay}
-              className={playButtonClass}
-              title={isPlaying ? "Pause" : "Play"}
-            >
-              {isPlaying ? (
-                <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="8" y="6" width="3" height="12" rx="0.5" />
-                  <rect x="13" y="6" width="3" height="12" rx="0.5" />
-                </svg>
-              ) : (
-                <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={handleMetronomeToggle}
-              className={iconButtonClass(metronomeEnabled)}
-              title={metronomeEnabled ? "Metronome on" : "Metronome off"}
-            >
-              <svg
-                aria-hidden="true"
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.6}
-              >
-                <path d="M9 20h6l1.5-5-3-9H10l-3 9L8 20Z" strokeLinejoin="round" />
-                <path d="M9 14h6" strokeLinecap="round" />
-                <path d="M12 8l5 8" strokeLinecap="round" />
-                <circle cx="17" cy="17" r="1.3" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={() => setRecordArm(!recordArm)}
-              className={recordButtonClass}
-              title={recordArm ? "Recording armed" : "Arm recording"}
-            >
-              <svg
-                aria-hidden="true"
-                className="h-3.5 w-3.5"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <circle cx="12" cy="12" r="5" />
-              </svg>
-            </button>
-          </div>
-
-          <div className={`${controlBlock} hidden sm:flex items-center gap-3`}>
-            <label
-              className="text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-500"
-              htmlFor={tempoInputId}
-            >
-              BPM
-            </label>
-            <input
-              id={tempoInputId}
-              type="number"
-              value={tempo}
-              onChange={(event) => setTempo(Number(event.target.value))}
-              className="w-16 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40"
-            />
-            <div className="h-6 w-px bg-white/10" />
-            <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-500">
-              Time
-            </span>
-            <span className="rounded-lg border border-white/10 bg-black/20 px-2 py-1 text-sm font-mono text-white">
-              {formattedTime}
-            </span>
-          </div>
-
-          <div className={`${controlBlock} flex items-center gap-2`}>
-            <label
-              className="text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-500"
-              htmlFor={gridSelectId}
-            >
-              Grid
-            </label>
-            <select
-              id={gridSelectId}
-              value={gridResolutionId}
-              onChange={(event) => setGridResolution(event.target.value)}
-              className="w-16 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-xs font-semibold text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30"
-            >
-              {PIANO_ROLL.GRID_RESOLUTIONS.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className={`${controlBlock} hidden md:flex items-center gap-2`}>
-            <TopBarMidiControls />
-            <div className="h-6 w-px bg-white/10" />
-            <button
-              type="button"
-              onClick={() => undo()}
-              disabled={!canUndo}
-              className={`${iconButtonClass()} h-8 w-8 disabled:cursor-not-allowed disabled:opacity-30`}
-              title="Undo"
-            >
-              <svg
-                aria-hidden="true"
-                className="h-3.5 w-3.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={() => redo()}
-              disabled={!canRedo}
-              className={`${iconButtonClass()} h-8 w-8 disabled:cursor-not-allowed disabled:opacity-30`}
-              title="Redo"
-            >
-              <svg
-                aria-hidden="true"
-                className="h-3.5 w-3.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6"
-                />
-              </svg>
-            </button>
-          </div>
-
-          <div className="relative" ref={settingsRef}>
-            <button
-              type="button"
-              onClick={() => setSettingsOpen((prev) => !prev)}
-              className={iconButtonClass(settingsOpen)}
-              title="Session settings"
-              aria-haspopup="true"
-              aria-expanded={settingsOpen}
-            >
-              <svg
-                aria-hidden="true"
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.4}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M10.5 2.5h3l.7 2.5c.4.1.8.3 1.2.6l2.5-.7 1.5 2.6-1.8 1.9c.1.3.1.6.1.9s0 .6-.1.9l1.8 1.9-1.5 2.6-2.5-.7c-.4.3-.8.5-1.2.6l-.7 2.5h-3l-.7-2.5c-.4-.1-.8-.3-1.2-.6l-2.5.7-1.5-2.6 1.8-1.9a5 5 0 01-.1-.9c0-.3 0-.6.1-.9l-1.8-1.9 1.5-2.6 2.5.7c.4-.3.8-.5 1.2-.6z"
-                />
-                <circle cx="12" cy="12" r="2.3" />
-              </svg>
-            </button>
-            {settingsOpen ? (
-              <div className="absolute right-0 mt-3 w-72 rounded-2xl border border-white/10 bg-[rgba(10,10,14,0.95)] p-3 shadow-layer-lg">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-500">
-                  View Settings
-                </p>
-                <div className="space-y-2">
-                  {settingsOptions.map((option) => (
-                    <SettingsToggle key={option.label} {...option} />
-                  ))}
-                </div>
-                <div className="mt-3 flex gap-2 text-xs text-zinc-500">
-                  <label className="flex-1" htmlFor={keySelectId}>
-                    Key
-                    <select
-                      id={keySelectId}
-                      value={rootNote}
-                      onChange={(event) => setRootNote(event.target.value)}
-                      className="mt-1 w-full rounded-md border border-white/10 bg-black/40 px-2 py-1 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40"
-                    >
-                      {getRootNotes().map((note) => (
-                        <option key={note} value={note}>
-                          {note}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="flex-1" htmlFor={scaleSelectId}>
-                    Scale
-                    <select
-                      id={scaleSelectId}
-                      value={scale}
-                      onChange={(event) => setScale(event.target.value)}
-                      className="mt-1 w-full rounded-md border border-white/10 bg-black/40 px-2 py-1 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40"
-                    >
-                      {getScaleNames().map((name) => (
-                        <option key={name} value={name}>
-                          {name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+    <header className="sticky top-0 z-40 border-b border-white/5 bg-[rgba(6,6,9,0.92)] text-sm text-zinc-200 backdrop-blur-sm">
+      <div className="flex flex-col gap-2 px-4 py-2">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex min-w-[200px] items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-sm font-semibold text-white">
+                tn
               </div>
-            ) : null}
+              <div>
+                <p className="text-sm font-semibold text-white">tone</p>
+                <p className="text-xs text-zinc-500">Untitled Project</p>
+              </div>
+            </div>
+            <div className="hidden items-center gap-1 md:flex">
+              <MenuDropdown label="File" items={fileMenuItems} />
+              <MenuDropdown label="Edit" items={editMenuItems} />
+            </div>
+          </div>
+
+          <div className="flex min-w-[260px] flex-1 items-center justify-center gap-4">
+            <div className={`${controlBlock} gap-1.5`}>
+              <button type="button" onClick={handleStop} className={iconButtonClass()} title="Stop">
+                <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="7" y="7" width="10" height="10" rx="1" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={handlePlay}
+                className={playButtonClass}
+                title={isPlaying ? "Pause" : "Play"}
+              >
+                {isPlaying ? (
+                  <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="8" y="6" width="3" height="12" rx="0.5" />
+                    <rect x="13" y="6" width="3" height="12" rx="0.5" />
+                  </svg>
+                ) : (
+                  <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={handleMetronomeToggle}
+                className={iconButtonClass(metronomeEnabled)}
+                title={metronomeEnabled ? "Metronome on" : "Metronome off"}
+              >
+                <svg
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.6}
+                >
+                  <path d="M9 20h6l1.5-5-3-9H10l-3 9L8 20Z" strokeLinejoin="round" />
+                  <path d="M9 14h6" strokeLinecap="round" />
+                  <path d="M12 8l5 8" strokeLinecap="round" />
+                  <circle cx="17" cy="17" r="1.3" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRecordArm(!recordArm)}
+                className={recordButtonClass}
+                title={recordArm ? "Recording armed" : "Arm recording"}
+              >
+                <svg aria-hidden="true" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="12" r="5" />
+                </svg>
+              </button>
+            </div>
+            <div className="hidden items-center gap-3 sm:flex">
+              <label
+                className="text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-500"
+                htmlFor={tempoInputId}
+              >
+                BPM
+              </label>
+              <input
+                id={tempoInputId}
+                type="number"
+                value={tempo}
+                onChange={(event) => setTempo(Number(event.target.value))}
+                className="w-16 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40"
+              />
+              <div className="h-6 w-px bg-white/10" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-500">
+                Time
+              </span>
+              <span className="rounded-lg border border-white/10 bg-white/[0.02] px-2 py-1 text-sm font-mono text-white">
+                {formattedTime}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="relative" ref={settingsRef}>
+              <button
+                type="button"
+                onClick={() => setSettingsOpen((prev) => !prev)}
+                className={iconButtonClass(settingsOpen)}
+                title="Session settings"
+                aria-haspopup="true"
+                aria-expanded={settingsOpen}
+              >
+                <svg
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.4}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M10.5 2.5h3l.7 2.5c.4.1.8.3 1.2.6l2.5-.7 1.5 2.6-1.8 1.9c.1.3.1.6.1.9s0 .6-.1.9l1.8 1.9-1.5 2.6-2.5-.7c-.4.3-.8.5-1.2.6l-.7 2.5h-3l-.7-2.5c-.4-.1-.8-.3-1.2-.6l-2.5.7-1.5-2.6 1.8-1.9a5 5 0 01-.1-.9c0-.3 0-.6.1-.9l-1.8-1.9 1.5-2.6 2.5.7c.4-.3.8-.5 1.2-.6z"
+                  />
+                  <circle cx="12" cy="12" r="2.3" />
+                </svg>
+              </button>
+              {settingsOpen ? (
+                <div className="absolute right-0 mt-3 w-72 rounded-2xl border border-white/10 bg-[rgba(10,10,14,0.95)] p-3 shadow-layer-lg">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-500">
+                    View Settings
+                  </p>
+                  <div className="space-y-2">
+                    {settingsOptions.map((option) => (
+                      <SettingsToggle key={option.label} {...option} />
+                    ))}
+                  </div>
+                  <div className="mt-3 flex gap-2 text-xs text-zinc-500">
+                    <label className="flex-1" htmlFor={keySelectId}>
+                      Key
+                      <select
+                        id={keySelectId}
+                        value={rootNote}
+                        onChange={(event) => setRootNote(event.target.value)}
+                        className="mt-1 w-full rounded-md border border-white/10 bg-black/40 px-2 py-1 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40"
+                      >
+                        {getRootNotes().map((note) => (
+                          <option key={note} value={note}>
+                            {note}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex-1" htmlFor={scaleSelectId}>
+                      Scale
+                      <select
+                        id={scaleSelectId}
+                        value={scale}
+                        onChange={(event) => setScale(event.target.value)}
+                        className="mt-1 w-full rounded-md border border-white/10 bg-black/40 px-2 py-1 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40"
+                      >
+                        {getScaleNames().map((name) => (
+                          <option key={name} value={name}>
+                            {name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-1 items-center gap-2">
+            <div className={`${controlBlock} hidden gap-1.5 lg:flex`}>
+              {VIEW_OPTIONS.map((option) => {
+                const isActive = activeView === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setActiveView(option.id)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      isActive ? "bg-white/10 text-white" : "text-zinc-400 hover:text-white"
+                    }`}
+                    aria-pressed={isActive}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="lg:hidden">
+              <select
+                value={activeView}
+                onChange={(event) => setActiveView(event.target.value as WorkspaceView)}
+                className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30"
+              >
+                {VIEW_OPTIONS.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className={`${controlBlock} gap-2`}>
+              <label
+                className="text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-500"
+                htmlFor={gridSelectId}
+              >
+                Grid
+              </label>
+              <select
+                id={gridSelectId}
+                value={gridResolutionId}
+                onChange={(event) => setGridResolution(event.target.value)}
+                className="w-20 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-xs font-semibold text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30"
+              >
+                {PIANO_ROLL.GRID_RESOLUTIONS.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={`${controlBlock} hidden md:flex`}>
+              <TopBarMidiControls className="w-full" />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => undo()}
+                disabled={!canUndo}
+                className={`${iconButtonClass()} h-8 w-8 disabled:cursor-not-allowed disabled:opacity-30`}
+                title="Undo"
+              >
+                <svg
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                  />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => redo()}
+                disabled={!canRedo}
+                className={`${iconButtonClass()} h-8 w-8 disabled:cursor-not-allowed disabled:opacity-30`}
+                title="Redo"
+              >
+                <svg
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
