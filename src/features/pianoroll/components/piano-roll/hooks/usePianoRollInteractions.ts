@@ -40,9 +40,9 @@ interface UsePianoRollInteractionsProps {
   setPlayheadMs: (ms: number) => void;
   isPlaying: boolean;
   pause: () => void;
-  containerRef: React.RefObject<HTMLDivElement>;
-  gridContainerRef: React.RefObject<HTMLDivElement>;
-  timelineContainerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  gridContainerRef: React.RefObject<HTMLDivElement | null>;
+  timelineContainerRef: React.RefObject<HTMLDivElement | null>;
   scrollLeft: number;
   noteToIndex: Map<string, number>;
   viewportWidth: number;

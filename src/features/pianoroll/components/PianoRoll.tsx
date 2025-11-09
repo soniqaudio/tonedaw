@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { playbackController } from "@/core/playback/playbackController";
 import { useMidiStore } from "@/core/stores/useMidiStore";
 import { useMusicTheoryStore } from "@/core/stores/useMusicTheoryStore";
 import { useTrackStore } from "@/core/stores/useTrackStore";
 import { useTransportStore } from "@/core/stores/useTransportStore";
 import { useUIStore } from "@/core/stores/useUIStore";
+import { resolveTrackId } from "@/core/utils/trackUtils";
 import { useCanvasSize } from "./piano-roll/hooks/useCanvasSize";
 import { usePianoRollDerivedState } from "./piano-roll/hooks/usePianoRollDerivedState";
 import { usePianoRollInteractions } from "./piano-roll/hooks/usePianoRollInteractions";
@@ -58,7 +59,50 @@ const PianoRoll = () => {
   const pianoKeysRef = useRef<HTMLDivElement>(null);
   const pianoKeysWidthRef = useRef(PIANO_KEYS_WIDTH_FALLBACK);
 
-  // Derived state hook - all computed values
+  // Compute activeTrackClips inline for scroll sync hook (avoids calling derived state twice)
+  // This breaks the circular dependency: gridWidth needs gridExtraBeats, but gridExtraBeats needs gridWidth
+  const allClips = showSustainExtended ? sustainExtendedClips : clipsWithoutSustain;
+  const baseActiveTrackClips = useMemo(() => {
+    if (!activeTrackId) return allClips;
+    const resolvedActiveId = resolveTrackId(activeTrackId);
+    return allClips.filter((clip) => resolveTrackId(clip.trackId) === resolvedActiveId);
+  }, [allClips, activeTrackId]);
+
+  // Compute base timing values needed for scroll sync (without calling full derived state)
+  const baseMsPerBeat = 60000 / Math.max(tempo, 1);
+  const basePixelsPerBeat = 64; // PIANO_ROLL.PIXELS_PER_BEAT
+  const baseKeyHeight = 16; // PIANO_ROLL.KEY_HEIGHT
+
+  // Canvas sizing
+  const {
+    width: fallbackViewportWidth,
+    height: canvasHeight,
+    scrollLeft,
+    scrollTop,
+    containerRef,
+  } = useCanvasSize(baseKeyHeight, 88); // 88 piano keys
+
+  // Scroll synchronization hook - computes gridExtraBeats internally using base grid width
+  const { gridViewportWidth, gridExtraBeats } = usePianoRollScrollSync({
+    containerRef,
+    pianoKeysRef,
+    pianoKeysWidthRef,
+    scrollLeft,
+    scrollTop,
+    activeTrackClips: baseActiveTrackClips,
+    effectiveViewportWidth: fallbackViewportWidth,
+    msPerBeat: baseMsPerBeat,
+    pixelsPerBeat: basePixelsPerBeat,
+    playheadMs,
+    isPlaying,
+    followPlayhead,
+    pianoRollScroll,
+    setPianoRollScroll,
+    setPianoRollFollow,
+    fallbackViewportWidth,
+  });
+
+  // Single derived state call with actual gridExtraBeats - this is the source of truth
   const derivedState = usePianoRollDerivedState({
     sustainExtendedClips,
     clipsWithoutSustain,
@@ -69,7 +113,7 @@ const PianoRoll = () => {
     liveEvents,
     tempo,
     playheadMs,
-    gridExtraBeats: 0, // Will be updated by scroll sync hook
+    gridExtraBeats,
     gridResolutionId,
   });
 
@@ -89,49 +133,6 @@ const PianoRoll = () => {
     defaultDurationBeats,
     gridWidth,
   } = derivedState;
-
-  // Canvas sizing
-  const {
-    width: fallbackViewportWidth,
-    height: canvasHeight,
-    scrollLeft,
-    scrollTop,
-    containerRef,
-  } = useCanvasSize(keyHeight, pianoKeys.length);
-
-  // Scroll synchronization hook
-  const { gridViewportWidth, gridExtraBeats } = usePianoRollScrollSync({
-    containerRef,
-    pianoKeysRef,
-    pianoKeysWidthRef,
-    scrollLeft,
-    scrollTop,
-    gridWidth,
-    effectiveViewportWidth: fallbackViewportWidth,
-    msPerBeat,
-    pixelsPerBeat,
-    isPlaying,
-    followPlayhead,
-    pianoRollScroll,
-    setPianoRollScroll,
-    setPianoRollFollow,
-    fallbackViewportWidth,
-  });
-
-  // Re-calculate derived state with updated gridExtraBeats
-  const updatedDerivedState = usePianoRollDerivedState({
-    sustainExtendedClips,
-    clipsWithoutSustain,
-    showSustainExtended,
-    showGhostNotes,
-    activeTrackId,
-    recordingPreviewClips,
-    liveEvents,
-    tempo,
-    playheadMs,
-    gridExtraBeats,
-    gridResolutionId,
-  });
 
   const effectiveViewportWidth = gridViewportWidth > 0 ? gridViewportWidth : fallbackViewportWidth;
   const gridCanvasWidth = Math.max(Math.round(effectiveViewportWidth), 1);
@@ -168,7 +169,7 @@ const PianoRoll = () => {
     keyHeight,
     quantizationBeats,
     defaultDurationBeats,
-    gridWidth: updatedDerivedState.gridWidth,
+    gridWidth: derivedState.gridWidth,
     setPlayheadMs,
     isPlaying,
     pause: () => playbackController.pause(),
@@ -195,12 +196,12 @@ const PianoRoll = () => {
     <div className="flex h-full min-h-0 flex-col bg-transparent">
       <Timeline
         ref={timelineContainerRef}
-        gridWidth={updatedDerivedState.gridWidth}
+        gridWidth={derivedState.gridWidth}
         pixelsPerBeat={pixelsPerBeat}
         subdivisionsPerBeat={subdivisionsPerBeat}
         scrollLeft={scrollLeft}
         viewportWidth={effectiveViewportWidth}
-        playheadX={updatedDerivedState.clampedPlayheadX}
+        playheadX={derivedState.clampedPlayheadX}
         onPointerDown={handleTimelinePointerDown}
         onViewportDragStart={handleViewportDragStart}
       />
@@ -219,15 +220,15 @@ const PianoRoll = () => {
           </div>
 
           {/* Grid + Velocity lane stack */}
-          <div className="relative flex flex-col" style={{ width: updatedDerivedState.gridWidth }}>
+          <div className="relative flex flex-col" style={{ width: derivedState.gridWidth }}>
             <div
               className="relative"
-              style={{ width: updatedDerivedState.gridWidth, height: canvasHeight }}
+              style={{ width: derivedState.gridWidth, height: canvasHeight }}
             >
               {/* Invisible spacer to create scrollable area */}
               <div
                 style={{
-                  width: updatedDerivedState.gridWidth,
+                  width: derivedState.gridWidth,
                   height: canvasHeight,
                   position: "absolute",
                 }}
@@ -239,7 +240,7 @@ const PianoRoll = () => {
                 tabIndex={-1}
                 className="pointer-events-auto absolute left-0 top-0"
                 style={{
-                  width: updatedDerivedState.gridWidth,
+                  width: derivedState.gridWidth,
                   height: canvasHeight,
                 }}
                 onContextMenu={(e) => e.preventDefault()}
@@ -295,7 +296,7 @@ const PianoRoll = () => {
                   <DynamicOverlay
                     width={gridCanvasWidth}
                     height={canvasHeight}
-                    playheadX={updatedDerivedState.playheadX}
+                    playheadX={derivedState.playheadX}
                     activeNotes={activeNotes}
                     clips={renderClips}
                     noteToIndex={noteToIndex}

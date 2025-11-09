@@ -1,20 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { PIANO_ROLL } from "@/core/constants/pianoRoll";
 import { useTransportStore } from "@/core/stores/useTransportStore";
 import { useUIStore } from "@/core/stores/useUIStore";
+import type { MidiNoteClip } from "@/core/midi/types";
 
 const PIANO_KEYS_WIDTH_FALLBACK = 80;
 const EXTRA_BEATS = 16;
 
 interface UsePianoRollScrollSyncProps {
-  containerRef: React.RefObject<HTMLDivElement>;
-  pianoKeysRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  pianoKeysRef: React.RefObject<HTMLDivElement | null>;
   pianoKeysWidthRef: React.MutableRefObject<number>;
   scrollLeft: number;
   scrollTop: number;
-  gridWidth: number;
+  activeTrackClips: MidiNoteClip[];
   effectiveViewportWidth: number;
   msPerBeat: number;
   pixelsPerBeat: number;
+  playheadMs: number;
   isPlaying: boolean;
   followPlayhead: boolean;
   pianoRollScroll: { left: number; top: number };
@@ -46,10 +49,11 @@ export const usePianoRollScrollSync = ({
   pianoKeysWidthRef,
   scrollLeft,
   scrollTop,
-  gridWidth,
+  activeTrackClips,
   effectiveViewportWidth,
   msPerBeat,
   pixelsPerBeat,
+  playheadMs,
   isPlaying,
   followPlayhead,
   pianoRollScroll,
@@ -62,6 +66,34 @@ export const usePianoRollScrollSync = ({
   const autoScrollRafRef = useRef<number | null>(null);
   const [gridViewportWidth, setGridViewportWidth] = useState(fallbackViewportWidth);
   const [gridExtraBeats, setGridExtraBeats] = useState(0);
+
+  // Compute base grid width (without extra beats) to determine when to expand
+  // This breaks the circular dependency with usePianoRollDerivedState
+  const baseGridWidth = useMemo(() => {
+    const clipTotalBeats =
+      activeTrackClips.length === 0
+        ? 8
+        : Math.max(
+            activeTrackClips.reduce((max, clip) => {
+              const clipEndBeats = (clip.start + clip.duration) / msPerBeat;
+              return Math.max(max, clipEndBeats);
+            }, 0),
+            8,
+          );
+
+    const playheadBeats = playheadMs / msPerBeat;
+    const playheadBufferBeats = 16;
+    const beatsForViewport = Math.max(
+      8,
+      clipTotalBeats + EXTRA_BEATS,
+      Math.ceil(playheadBeats + playheadBufferBeats),
+    );
+
+    return Math.max(beatsForViewport * pixelsPerBeat, PIANO_ROLL.MIN_GRID_WIDTH);
+  }, [activeTrackClips, msPerBeat, pixelsPerBeat, playheadMs]);
+
+  // Current grid width includes extra beats
+  const gridWidth = baseGridWidth + gridExtraBeats * pixelsPerBeat;
 
   // Measure piano keys width and calculate viewport width
   useEffect(() => {

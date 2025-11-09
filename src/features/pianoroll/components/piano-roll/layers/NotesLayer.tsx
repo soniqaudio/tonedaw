@@ -106,6 +106,21 @@ export const NotesLayer = ({
     });
 
     ctx.restore();
+
+    // Cleanup: Clear canvas and release memory when component unmounts
+    return () => {
+      const cleanupCanvas = canvasRef.current;
+      if (!cleanupCanvas) return;
+
+      const cleanupCtx = cleanupCanvas.getContext("2d");
+      if (cleanupCtx) {
+        // Clear the canvas
+        cleanupCtx.clearRect(0, 0, cleanupCanvas.width, cleanupCanvas.height);
+        // Reset canvas dimensions to release memory buffers
+        cleanupCanvas.width = 0;
+        cleanupCanvas.height = 0;
+      }
+    };
   }, [
     clips,
     noteToIndex,

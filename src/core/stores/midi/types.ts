@@ -63,6 +63,7 @@ export interface MidiState {
         noteNumber: number;
       }>,
     ) => void;
+    updateClipVelocity: (clipIds: string[], velocity: number) => void;
     setSelectedClipIds: (ids: string[]) => void;
 
     // Clipboard

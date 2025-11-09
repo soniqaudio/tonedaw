@@ -95,6 +95,21 @@ export const StaticGrid = ({
         }
       }
     }
+
+    // Cleanup: Clear canvas and release memory when component unmounts
+    return () => {
+      const cleanupCanvas = canvasRef.current;
+      if (!cleanupCanvas) return;
+
+      const cleanupCtx = cleanupCanvas.getContext("2d");
+      if (cleanupCtx) {
+        // Clear the canvas
+        cleanupCtx.clearRect(0, 0, cleanupCanvas.width, cleanupCanvas.height);
+        // Reset canvas dimensions to release memory buffers
+        cleanupCanvas.width = 0;
+        cleanupCanvas.height = 0;
+      }
+    };
   }, [width, height, pixelsPerBeat, keyHeight, scrollLeft, subdivisionsPerBeat]);
 
   return <canvas ref={canvasRef} className="pointer-events-none absolute left-0 top-0 block" />;

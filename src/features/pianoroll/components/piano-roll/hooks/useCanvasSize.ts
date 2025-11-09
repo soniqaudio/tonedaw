@@ -6,7 +6,7 @@ interface CanvasSizeResult {
   viewportWidth: number;
   scrollLeft: number;
   scrollTop: number;
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const useCanvasSize = (keyHeight: number, pianoKeysLength: number): CanvasSizeResult => {
@@ -66,6 +66,6 @@ export const useCanvasSize = (keyHeight: number, pianoKeysLength: number): Canva
     viewportWidth,
     scrollLeft,
     scrollTop,
-    containerRef: containerRef as React.RefObject<HTMLDivElement>,
+    containerRef,
   };
 };
