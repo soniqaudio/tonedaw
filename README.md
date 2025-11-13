@@ -8,8 +8,8 @@
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Website](https://img.shields.io/badge/Website-soniq--audio.com-blue)](https://soniq-audio.com)
   [![Discord](https://img.shields.io/badge/Discord-Join%20Us-5865F2)](https://discord.gg/Y62FaSMP)
-  [![X Follow @soniqaudio_](https://img.shields.io/badge/X-Follow%20@soniqaudio_-black)](https://x.com/soniqaudio_)
-  [![X Follow @rvm0n_](https://img.shields.io/badge/X-Follow%20@rvm0n_-black)](https://x.com/rvm0n_)
+  [![X Follow @soniqaudio_](https://img.shields.io/badge/X-@soniqaudio_-black?logo=x&logoColor=white)](https://x.com/soniqaudio_)
+  [![X Follow @rvm0n_](https://img.shields.io/badge/X-@rvm0n_-black?logo=x&logoColor=white)](https://x.com/rvm0n_)
 </div>
 
 ---
