@@ -1,15 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MidiNoteClip } from "@/core/midi/types";
-import type { ClipRect } from "../hooks/useGridCoordinates";
 
 interface UseMarqueeSelectionProps {
   clips: MidiNoteClip[];
   gridContainerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   scrollLeft: number;
+  pixelsPerBeat: number;
+  msPerBeat: number;
+  keyHeight: number;
+  noteToIndex: Map<string, number>;
   setSelectedClipIds: (ids: string[]) => void;
-  getClipRectPx: (clip: MidiNoteClip) => ClipRect | null;
   onMarqueeStart?: () => void;
   onMarqueeEnd?: () => void;
+}
+
+interface MarqueeState {
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  startMs: number;
+  endMs: number;
+  startKey: number;
+  endKey: number;
 }
 
 export interface SelectionRect {
@@ -22,13 +36,17 @@ export interface SelectionRect {
 export const useMarqueeSelection = ({
   clips,
   gridContainerRef,
+  containerRef,
   scrollLeft,
+  pixelsPerBeat,
+  msPerBeat,
+  keyHeight,
+  noteToIndex,
   setSelectedClipIds,
-  getClipRectPx,
   onMarqueeStart,
   onMarqueeEnd,
 }: UseMarqueeSelectionProps) => {
-  const marqueeRef = useRef<SelectionRect | null>(null);
+  const marqueeRef = useRef<MarqueeState | null>(null);
   const [selectionRect, setSelectionRect] = useState<SelectionRect | null>(null);
   const clipsRef = useRef(clips);
 
@@ -36,6 +54,31 @@ export const useMarqueeSelection = ({
   useEffect(() => {
     clipsRef.current = clips;
   }, [clips]);
+
+  const toMs = useCallback(
+    (worldX: number) => {
+      const beats = worldX / Math.max(pixelsPerBeat, 0.0001);
+      return beats * msPerBeat;
+    },
+    [msPerBeat, pixelsPerBeat],
+  );
+
+  const toKeyIndex = useCallback(
+    (worldY: number) => {
+      if (keyHeight <= 0) return 0;
+      return Math.max(0, Math.floor(worldY / keyHeight));
+    },
+    [keyHeight],
+  );
+
+  const updateSelectionVisual = useCallback((state: MarqueeState) => {
+    setSelectionRect({
+      x0: Math.min(state.startX, state.endX),
+      y0: Math.min(state.startY, state.endY),
+      x1: Math.max(state.startX, state.endX),
+      y1: Math.max(state.startY, state.endY),
+    });
+  }, []);
 
   // Handle pointer move during marquee selection
   const handleMarqueeMove = useCallback(
@@ -47,48 +90,48 @@ export const useMarqueeSelection = ({
 
       const localX = event.clientX - gridRect.left;
       const localY = event.clientY - gridRect.top;
-      const worldX = localX + scrollLeft;
+      const currentScrollLeft = containerRef.current?.scrollLeft ?? scrollLeft;
+      const worldX = localX + currentScrollLeft;
       const worldY = localY;
 
-      marqueeRef.current.x1 = worldX;
-      marqueeRef.current.y1 = worldY;
-      setSelectionRect({ ...marqueeRef.current });
+      marqueeRef.current.endX = worldX;
+      marqueeRef.current.endY = worldY;
+      marqueeRef.current.endMs = toMs(worldX);
+      marqueeRef.current.endKey = toKeyIndex(worldY);
+      updateSelectionVisual(marqueeRef.current);
     },
-    [gridContainerRef, scrollLeft],
+    [gridContainerRef, containerRef, scrollLeft, toMs, toKeyIndex, updateSelectionVisual],
   );
 
   // Select clips that intersect with marquee rectangle
   const selectIntersectingClips = useCallback(() => {
     if (!marqueeRef.current) return;
 
-    const { x0, y0, x1, y1 } = marqueeRef.current;
-    const minX = Math.min(x0, x1);
-    const maxX = Math.max(x0, x1);
-    const minY = Math.min(y0, y1);
-    const maxY = Math.max(y0, y1);
+    const { startMs, endMs, startKey, endKey } = marqueeRef.current;
+    const minMs = Math.min(startMs, endMs);
+    const maxMs = Math.max(startMs, endMs);
+    const minKeyIdx = Math.min(startKey, endKey);
+    const maxKeyIdx = Math.max(startKey, endKey);
 
     const selectedIds: string[] = [];
     const currentClips = clipsRef.current ?? [];
 
     for (const clip of currentClips) {
-      const rect = getClipRectPx(clip);
-      if (!rect) continue;
+      const clipStart = clip.start;
+      const clipEnd = clip.start + clip.duration;
+      const keyIdx = noteToIndex.get(clip.noteName);
+      if (keyIdx === undefined) continue;
 
-      // Check if rectangles intersect
-      const intersects = !(
-        rect.right < minX ||
-        rect.left > maxX ||
-        rect.bottom < minY ||
-        rect.top > maxY
-      );
+      const intersectsHorizontally = !(clipEnd < minMs || clipStart > maxMs);
+      const intersectsVertically = keyIdx >= minKeyIdx && keyIdx <= maxKeyIdx;
 
-      if (intersects) {
+      if (intersectsHorizontally && intersectsVertically) {
         selectedIds.push(clip.id);
       }
     }
 
     setSelectedClipIds(selectedIds);
-  }, [getClipRectPx, setSelectedClipIds]);
+  }, [noteToIndex, setSelectedClipIds]);
 
   // Handle pointer up during marquee selection
   const handleMarqueeUp = useCallback(() => {
@@ -103,13 +146,27 @@ export const useMarqueeSelection = ({
   // Start marquee selection
   const startMarquee = useCallback(
     (worldX: number, worldY: number) => {
-      marqueeRef.current = { x0: worldX, y0: worldY, x1: worldX, y1: worldY };
-      setSelectionRect(marqueeRef.current);
+      const currentScrollLeft = containerRef.current?.scrollLeft ?? scrollLeft;
+      const adjustedX = worldX + (currentScrollLeft - scrollLeft);
+      const startMs = toMs(adjustedX);
+      const startKey = toKeyIndex(worldY);
+
+      marqueeRef.current = {
+        startX: adjustedX,
+        startY: worldY,
+        endX: adjustedX,
+        endY: worldY,
+        startMs,
+        endMs: startMs,
+        startKey,
+        endKey: startKey,
+      };
+      updateSelectionVisual(marqueeRef.current);
       window.addEventListener("pointermove", handleMarqueeMove, true);
       window.addEventListener("pointerup", handleMarqueeUp, true);
       onMarqueeStart?.();
     },
-    [handleMarqueeMove, handleMarqueeUp, onMarqueeStart],
+    [containerRef, handleMarqueeMove, handleMarqueeUp, onMarqueeStart, scrollLeft, toKeyIndex, toMs, updateSelectionVisual],
   );
 
   // Cancel marquee (cleanup)

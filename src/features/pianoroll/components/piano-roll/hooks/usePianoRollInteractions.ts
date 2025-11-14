@@ -138,9 +138,13 @@ export const usePianoRollInteractions = ({
   const { startMarquee, selectionRect, isMarqueeActive, cancelMarquee } = useMarqueeSelection({
     clips,
     gridContainerRef,
+    containerRef,
     scrollLeft,
+    pixelsPerBeat,
+    msPerBeat,
+    keyHeight,
+    noteToIndex,
     setSelectedClipIds,
-    getClipRectPx,
     onMarqueeStart: () => {
       modeRef.current = "marquee";
     },
@@ -249,7 +253,8 @@ export const usePianoRollInteractions = ({
       const { localX, localY } = clientToLocalRect(event.clientX, event.clientY, gridRect);
 
       // Convert viewport coordinates to world coordinates by adding scrollLeft
-      const worldX = localX + scrollLeft;
+      const currentScrollLeft = containerRef.current?.scrollLeft ?? scrollLeft;
+      const worldX = localX + currentScrollLeft;
       const worldY = localY;
 
       // Clamp to grid bounds
@@ -385,6 +390,7 @@ export const usePianoRollInteractions = ({
     [
       gridContainerRef,
       scrollLeft,
+      containerRef,
       gridWidth,
       pixelsPerBeat,
       msPerBeat,
@@ -413,12 +419,13 @@ export const usePianoRollInteractions = ({
 
       const { localX, localY } = clientToLocalRect(event.clientX, event.clientY, gridRect);
 
-      const worldX = localX + scrollLeft;
+      const currentScrollLeft = containerRef.current?.scrollLeft ?? scrollLeft;
+      const worldX = localX + currentScrollLeft;
       const worldY = localY;
 
       updateCursor(worldX, worldY);
     },
-    [gridContainerRef, scrollLeft, updateCursor],
+    [gridContainerRef, scrollLeft, containerRef, updateCursor],
   );
 
   return {
