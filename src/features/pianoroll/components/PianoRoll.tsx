@@ -198,72 +198,9 @@ const PianoRoll = () => {
 
   const velocityRowHeight = showVelocityLane ? VELOCITY_LANE_HEIGHT : 20;
 
-  // Prevent browser zoom when cmd/ctrl is pressed globally
-  useEffect(() => {
-    const handleGlobalWheel = (event: WheelEvent) => {
-      if (!event.ctrlKey && !event.metaKey) {
-        return;
-      }
-
-      const container = containerRef.current;
-      if (!container) return;
-
-      const rect = container.getBoundingClientRect();
-      const insideRect =
-        event.clientX >= rect.left &&
-        event.clientX <= rect.right &&
-        event.clientY >= rect.top &&
-        event.clientY <= rect.bottom;
-
-      if (!insideRect) {
-        return;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-      const syntheticEvent = {
-        ctrlKey: true,
-        metaKey: event.metaKey,
-        deltaX: event.deltaX,
-        deltaY: event.deltaY,
-        deltaMode: event.deltaMode,
-        preventDefault: () => event.preventDefault(),
-        stopPropagation: () => event.stopPropagation(),
-        clientX: event.clientX,
-        clientY: event.clientY,
-        altKey: event.altKey,
-        shiftKey: event.shiftKey,
-      } as unknown as React.WheelEvent<HTMLDivElement>;
-
-      handleWheel(syntheticEvent);
-    };
-
-    window.addEventListener("wheel", handleGlobalWheel, { passive: false });
-    const handleGesture = (event: Event) => {
-      const container = containerRef.current;
-      if (!container) return;
-      const rect = container.getBoundingClientRect();
-      const { clientX = 0, clientY = 0 } = event as unknown as { clientX?: number; clientY?: number };
-      if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
-        event.preventDefault();
-      }
-    };
-
-    window.addEventListener("gesturestart", handleGesture, { passive: false });
-    window.addEventListener("gesturechange", handleGesture, { passive: false });
-    window.addEventListener("gestureend", handleGesture, { passive: false });
-
-    return () => {
-      window.removeEventListener("wheel", handleGlobalWheel);
-      window.removeEventListener("gesturestart", handleGesture);
-      window.removeEventListener("gesturechange", handleGesture);
-      window.removeEventListener("gestureend", handleGesture);
-    };
-  }, []);
-
   // Handle wheel events for horizontal zoom (trackpad pinch)
   const handleWheel = useCallback(
-    (event: React.WheelEvent<HTMLDivElement>) => {
+    (event: WheelEvent) => {
       const isPinchGesture = event.ctrlKey || event.metaKey;
       if (!isPinchGesture) {
         return;
@@ -309,6 +246,73 @@ const PianoRoll = () => {
     [pianoRollZoom, setPianoRollZoom, containerRef, scrollLeft],
   );
 
+  // Attach non-passive wheel listener directly to the scroll container
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleNativeWheel = (event: WheelEvent) => {
+      handleWheel(event);
+    };
+
+    container.addEventListener("wheel", handleNativeWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener("wheel", handleNativeWheel);
+    };
+  }, [containerRef, handleWheel]);
+
+  // Prevent browser zoom when cmd/ctrl pinch gestures occur anywhere over the piano roll
+  useEffect(() => {
+    const handleGlobalWheel = (event: WheelEvent) => {
+      if (event.defaultPrevented) return;
+      if (!event.ctrlKey && !event.metaKey) {
+        return;
+      }
+
+      const container = containerRef.current;
+      if (!container) return;
+
+      const rect = container.getBoundingClientRect();
+      const insideRect =
+        event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom;
+
+      if (!insideRect) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      handleWheel(event);
+    };
+
+    const handleGesture = (event: Event) => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const rect = container.getBoundingClientRect();
+      const { clientX = 0, clientY = 0 } = event as unknown as { clientX?: number; clientY?: number };
+      if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener("wheel", handleGlobalWheel, { passive: false });
+    window.addEventListener("gesturestart", handleGesture, { passive: false });
+    window.addEventListener("gesturechange", handleGesture, { passive: false });
+    window.addEventListener("gestureend", handleGesture, { passive: false });
+
+    return () => {
+      window.removeEventListener("wheel", handleGlobalWheel);
+      window.removeEventListener("gesturestart", handleGesture);
+      window.removeEventListener("gesturechange", handleGesture);
+      window.removeEventListener("gestureend", handleGesture);
+    };
+  }, [containerRef, handleWheel]);
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-transparent">
       <Timeline
@@ -330,7 +334,6 @@ const PianoRoll = () => {
           ref={containerRef}
           className="relative flex flex-1 overflow-auto overscroll-y-contain"
           style={{ cursor: "crosshair" }}
-          onWheel={handleWheel}
         >
           {/* Piano Keys - sticky horizontally, scrolls vertically with grid */}
           <div ref={pianoKeysRef} className="sticky left-0 z-10 flex-shrink-0">
