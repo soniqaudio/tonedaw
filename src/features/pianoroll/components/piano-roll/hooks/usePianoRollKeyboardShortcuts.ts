@@ -40,7 +40,12 @@ export const usePianoRollKeyboardShortcuts = ({
       const target = event.target as HTMLElement | null;
       if (target) {
         const tagName = target.tagName;
-        if (tagName === "INPUT" || tagName === "TEXTAREA" || target.isContentEditable) {
+        const isTextInput =
+          tagName === "TEXTAREA" ||
+          target.isContentEditable ||
+          (tagName === "INPUT" && (target as HTMLInputElement).type === "text");
+
+        if (isTextInput) {
           return;
         }
       }
