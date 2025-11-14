@@ -225,8 +225,14 @@ const PianoRoll = () => {
       if (newZoom === currentZoom) return;
 
       const rect = container.getBoundingClientRect();
-      const mouseX = event.clientX - rect.left;
-      const worldX = mouseX + scrollLeft;
+      const currentScrollLeft = container.scrollLeft;
+      const gridRect = gridContainerRef.current?.getBoundingClientRect();
+      const pianoKeysWidth = pianoKeysWidthRef.current || PIANO_KEYS_WIDTH_FALLBACK;
+      const relativeMouseX = gridRect
+        ? event.clientX - gridRect.left
+        : event.clientX - rect.left - pianoKeysWidth;
+      const mouseX = Math.max(0, relativeMouseX);
+      const worldX = mouseX + currentScrollLeft;
       const ratio = newZoom / currentZoom;
       const newScrollLeft = Math.max(0, worldX * ratio - mouseX);
 
@@ -237,7 +243,7 @@ const PianoRoll = () => {
         setPianoRollZoom(newZoom);
       });
     },
-    [pianoRollZoom, setPianoRollZoom, containerRef, scrollLeft],
+    [pianoRollZoom, setPianoRollZoom, containerRef],
   );
 
   // Attach non-passive wheel listener directly to the scroll container
