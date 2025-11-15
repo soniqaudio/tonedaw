@@ -105,23 +105,16 @@ export function PlaylistView() {
           {mockTracks.map((track, index) => (
             <div
               key={track.name}
-              className="flex h-[92px] items-center justify-between border-b border-subtle px-4"
+              className="flex items-center justify-between border-b border-subtle px-4"
               style={{ height: `${ROW_HEIGHT}px` }}
             >
-              <div>
-                <p className="text-sm font-semibold text-foreground">{track.name}</p>
-                <p className="text-[11px] uppercase tracking-[0.2em] text-tertiary">{track.type}</p>
+              <div className="flex flex-col gap-0.5">
+                <p className="text-[13px] font-medium text-foreground">{track.name}</p>
+                <p className="text-[9px] font-medium uppercase tracking-[0.15em] text-disabled">
+                  {track.type}
+                </p>
               </div>
-              <span
-                className={cn(
-                  "rounded-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.3em] shadow-layer-sm",
-                  track.type === "Pattern"
-                    ? "bg-primary/20 text-primary border border-primary/30"
-                    : track.type === "Audio"
-                      ? "bg-layer-2 text-secondary border border-subtle"
-                      : "bg-layer-2 text-tertiary border border-subtle"
-                )}
-              >
+              <span className="text-[9px] font-medium uppercase tracking-[0.15em] text-disabled">
                 {track.badge}
               </span>
             </div>
@@ -130,31 +123,44 @@ export function PlaylistView() {
 
         {/* Timeline Area */}
         <div className="relative flex-1 overflow-auto bg-base">
-          {/* Smaller Timeline Header */}
+          {/* Timeline Header */}
           <div
-            className="sticky top-0 z-20 flex border-b border-border bg-layer-2 shadow-layer-sm"
+            className="sticky top-0 z-20 flex border-b border-medium bg-layer-2 shadow-layer-sm"
             style={{ width: timelineWidth }}
           >
-            {Array.from({ length: TOTAL_BARS }, (_, index) => (
-              <div
-                key={index}
-                className="relative flex h-8 w-[112px] items-center justify-center border-r border-subtle text-[10px] font-semibold text-tertiary"
-              >
-                <span>{index + 1}</span>
-              </div>
-            ))}
+            {Array.from({ length: TOTAL_BARS }, (_, index) => {
+              const isBarStart = (index + 1) % 4 === 1;
+              return (
+                <div
+                  key={index}
+                  className={cn(
+                    "relative flex h-8 w-[112px] items-center justify-center text-[10px] font-semibold",
+                    isBarStart ? "border-r border-medium text-secondary" : "border-r border-subtle text-tertiary"
+                  )}
+                >
+                  <span>{index + 1}</span>
+                </div>
+              );
+            })}
           </div>
 
           {/* Grid and Clips */}
-          <div
-            className="relative"
-            style={{
-              width: timelineWidth,
-              backgroundImage:
-                "linear-gradient(0deg, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)",
-              backgroundSize: `${BAR_WIDTH}px ${ROW_HEIGHT / 2}px`,
-            }}
-          >
+          <div className="relative" style={{ width: timelineWidth }}>
+            {/* Vertical grid lines */}
+            {Array.from({ length: TOTAL_BARS }, (_, index) => {
+              const isBarStart = (index + 1) % 4 === 1;
+              return (
+                <div
+                  key={`grid-${index}`}
+                  className={cn(
+                    "absolute top-0 bottom-0 pointer-events-none",
+                    isBarStart ? "border-r border-medium" : "border-r border-subtle"
+                  )}
+                  style={{ left: index * BAR_WIDTH }}
+                />
+              );
+            })}
+
             {mockTracks.map((track, trackIndex) => (
               <div
                 key={track.name}

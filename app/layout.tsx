@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ToneDAW",
-  description: "WIP digital audio workstation with shared piano roll core.",
+  title: "Tone",
+  description: "open source digital audio workstation",
 };
 
 export default function RootLayout({
