@@ -2,6 +2,7 @@ import type { MidiNoteClip } from "@/core/midi/types";
 import { midiNumberToName } from "@/core/midi/utils";
 import { generateClipId } from "@/core/utils/id";
 import { getActiveTrackId } from "@/core/utils/trackUtils";
+import { getOrCreateEditingPattern, updatePatternClipLengths } from "@/core/utils/patternUtils";
 import { useClipboardStore } from "../../useClipboardStore";
 import type { MidiState } from "../types";
 import { deriveFromEvents, noteEventsFromClip } from "./sharedHelpers";
@@ -93,6 +94,11 @@ export const createClipboardActions = (
     // Store in global clipboard
     useClipboardStore.getState().actions.setClipboard(clipboard);
 
+    // Collect pattern IDs to update
+    const affectedPatternIds = new Set(
+      selectedClips.map((clip) => clip.patternId).filter((id): id is string => id !== undefined)
+    );
+
     const remainingEvents = state.events.filter((event) =>
       event.type === "cc" ? true : !selectedSet.has(event.noteId),
     );
@@ -104,6 +110,14 @@ export const createClipboardActions = (
       ...derived,
       selectedClipIds: [],
     });
+    
+    // Update pattern clip lengths for affected patterns
+    // Use setTimeout to ensure clips have been removed from the store first
+    setTimeout(() => {
+      affectedPatternIds.forEach((patternId) => {
+        updatePatternClipLengths(patternId);
+      });
+    }, 0);
   },
 
   pasteClipsAt: (targetMs: number, targetNoteNumber: number) => {
@@ -116,6 +130,7 @@ export const createClipboardActions = (
 
     const noteDelta = targetNoteNumber - clipboard.baseNoteNumber;
     const activeTrackId = getActiveTrackId();
+    const patternId = getOrCreateEditingPattern(); // Get or create pattern for pasted notes
 
     const newClips = clipboard.items.map<MidiNoteClip>((item) => {
       const noteNumber = clampMidi(item.noteNumber + noteDelta);
@@ -130,6 +145,7 @@ export const createClipboardActions = (
         start,
         duration: item.duration,
         trackId: activeTrackId, // Use current active track instead of original
+        patternId, // Assign to current editing pattern
       };
     });
 
@@ -149,5 +165,11 @@ export const createClipboardActions = (
       ...derived,
       selectedClipIds: newClips.map((clip) => clip.id),
     });
+    
+    // Update pattern clip length after pasting
+    // Use setTimeout to ensure clips have been added to the store first
+    setTimeout(() => {
+      updatePatternClipLengths(patternId);
+    }, 0);
   },
 });

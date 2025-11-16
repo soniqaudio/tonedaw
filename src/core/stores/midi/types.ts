@@ -80,6 +80,7 @@ export interface MidiState {
       velocity: number;
       channel: number;
       trackId: string;
+      patternId?: string;
     }) => void;
     updateRecordingPreviews: (currentMs: number) => void;
     endRecordingPreview: (noteId: string) => void;

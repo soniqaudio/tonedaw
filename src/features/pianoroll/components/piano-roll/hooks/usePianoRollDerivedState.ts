@@ -12,6 +12,7 @@ interface UsePianoRollDerivedStateProps {
   showSustainExtended: boolean;
   showGhostNotes: boolean;
   activeTrackId: string | null;
+  editingPatternId: string | null;
   recordingPreviewClips: MidiNoteClip[];
   liveEvents: MidiLiveEvent[];
   tempo: number;
@@ -65,6 +66,7 @@ export const usePianoRollDerivedState = ({
   showSustainExtended,
   showGhostNotes,
   activeTrackId,
+  editingPatternId,
   recordingPreviewClips,
   liveEvents,
   tempo,
@@ -80,11 +82,26 @@ export const usePianoRollDerivedState = ({
   // Select clips based on sustain pedal display mode
   const allClips = showSustainExtended ? sustainExtendedClips : clipsWithoutSustain;
 
-  // Filter clips for active track
+  // Filter clips for active track and editing pattern
   const activeTrackClips = useMemo(() => {
-    if (!activeTrackId) return allClips;
-    return allClips.filter((clip) => resolveTrackId(clip.trackId) === activeTrackId);
-  }, [allClips, activeTrackId]);
+    let filtered = allClips;
+    
+    // First filter by track
+    if (activeTrackId) {
+      filtered = filtered.filter((clip) => resolveTrackId(clip.trackId) === activeTrackId);
+    }
+    
+    // Then filter by pattern if editing a specific pattern
+    // Show clips that belong to this pattern OR clips without patternId (backward compatibility)
+    if (editingPatternId) {
+      filtered = filtered.filter((clip) => 
+        clip.patternId === editingPatternId || !clip.patternId
+      );
+    }
+    // If no editingPatternId, show all clips for the track (normal mode)
+    
+    return filtered;
+  }, [allClips, activeTrackId, editingPatternId]);
 
   // Ghost notes (notes from inactive tracks)
   const ghostClips = useMemo(() => {
@@ -95,19 +112,21 @@ export const usePianoRollDerivedState = ({
 
   // Combine active track clips with recording preview clips
   const renderClips = useMemo(() => {
-    // Filter preview clips for active track
+    // Filter preview clips for active track and pattern
     let previewClipsForActiveTrack: typeof recordingPreviewClips = [];
     if (activeTrackId && recordingPreviewClips.length > 0) {
       const resolved = resolveTrackId(activeTrackId);
-      previewClipsForActiveTrack = recordingPreviewClips.filter(
-        (clip) => resolveTrackId(clip.trackId) === resolved,
-      );
+      previewClipsForActiveTrack = recordingPreviewClips.filter((clip) => {
+        const matchesTrack = resolveTrackId(clip.trackId) === resolved;
+        const matchesPattern = !editingPatternId || clip.patternId === editingPatternId;
+        return matchesTrack && matchesPattern;
+      });
     }
 
     // Combine with active track clips
     if (previewClipsForActiveTrack.length === 0) return activeTrackClips;
     return [...activeTrackClips, ...previewClipsForActiveTrack].sort((a, b) => a.start - b.start);
-  }, [activeTrackClips, recordingPreviewClips, activeTrackId]);
+  }, [activeTrackClips, recordingPreviewClips, activeTrackId, editingPatternId]);
 
   // Timing constants with zoom multipliers
   const msPerBeat = 60000 / Math.max(tempo, 1);

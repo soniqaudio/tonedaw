@@ -55,7 +55,6 @@ export const TopBarMidiControls = ({ className }: TopBarMidiControlsProps) => {
             <SelectValue placeholder="Choose MIDI" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Choose MIDI</SelectItem>
             {inputs.map((input) => (
               <SelectItem key={input.id} value={input.id}>
                 {input.name}

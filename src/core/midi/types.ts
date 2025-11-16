@@ -35,6 +35,8 @@ export type MidiDomainEvent =
       velocity: number;
       channel: number;
       noteId: string;
+      trackId?: string; // Track this note belongs to
+      patternId?: string; // Pattern this note belongs to
     }
   | {
       id: string;
@@ -44,6 +46,8 @@ export type MidiDomainEvent =
       velocity: number;
       channel: number;
       noteId: string;
+      trackId?: string; // Track this note belongs to
+      patternId?: string; // Pattern this note belongs to
     }
   | {
       id: string;
@@ -63,6 +67,7 @@ export interface MidiNoteClip {
   start: number;
   duration: number;
   trackId: string; // Which track this clip belongs to
+  patternId?: string; // Which pattern this clip belongs to (optional for FL Studio-style patterns)
 }
 
 export interface MidiRecorderState {

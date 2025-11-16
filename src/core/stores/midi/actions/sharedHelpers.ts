@@ -41,6 +41,8 @@ export const noteEventsFromClip = (clip: MidiNoteClip): MidiDomainEvent[] => {
       velocity: clip.velocity ?? 0.8,
       channel: clip.channel,
       noteId,
+      trackId: clip.trackId, // Preserve trackId
+      patternId: clip.patternId, // Preserve patternId
     },
     {
       id: offId,
@@ -50,6 +52,8 @@ export const noteEventsFromClip = (clip: MidiNoteClip): MidiDomainEvent[] => {
       velocity: clip.velocity ?? 0.8,
       channel: clip.channel,
       noteId,
+      trackId: clip.trackId, // Preserve trackId
+      patternId: clip.patternId, // Preserve patternId
     },
   ];
 };

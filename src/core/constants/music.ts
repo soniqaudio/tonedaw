@@ -21,7 +21,7 @@ export const MUSIC = {
   },
 
   // Default values
-  DEFAULT_VELOCITY: 0.85, // 85% velocity for created notes
+  DEFAULT_VELOCITY: 100, // Default velocity for created notes (0-127 MIDI range, 100 ~= 78%)
   DEFAULT_ROOT_NOTE: "C",
   DEFAULT_SCALE: "major" as const,
 } as const;

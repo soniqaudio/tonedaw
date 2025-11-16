@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { playbackController } from "@/core/playback/playbackController";
 import { useMidiStore } from "@/core/stores/useMidiStore";
 import { useMusicTheoryStore } from "@/core/stores/useMusicTheoryStore";
+import { usePatternStore } from "@/core/stores/usePatternStore";
 import { useTrackStore } from "@/core/stores/useTrackStore";
 import { useTransportStore } from "@/core/stores/useTransportStore";
 import { useUIStore } from "@/core/stores/useUIStore";
@@ -56,6 +57,7 @@ const PianoRoll = () => {
 
   const activeTrackId = useTrackStore((state) => state.activeTrackId);
   const setActiveTrack = useTrackStore((state) => state.actions.setActiveTrack);
+  const editingPatternId = usePatternStore((state) => state.editingPatternId);
 
   // Refs
   const gridContainerRef = useRef<HTMLDivElement>(null);
@@ -113,6 +115,7 @@ const PianoRoll = () => {
     showSustainExtended,
     showGhostNotes,
     activeTrackId,
+    editingPatternId,
     recordingPreviewClips,
     liveEvents,
     tempo,
@@ -337,7 +340,13 @@ const PianoRoll = () => {
         >
           {/* Piano Keys - sticky horizontally, scrolls vertically with grid */}
           <div ref={pianoKeysRef} className="sticky left-0 z-10 flex-shrink-0">
-            <PianoKeys pianoKeys={pianoKeys} keyHeight={keyHeight} activeNotes={activeNotes} />
+            <PianoKeys
+              pianoKeys={pianoKeys}
+              keyHeight={keyHeight}
+              activeNotes={activeNotes}
+              clips={activeTrackClips}
+              playheadMs={playheadMs}
+            />
           </div>
 
           {/* Grid + Velocity lane stack */}
@@ -443,7 +452,9 @@ const PianoRoll = () => {
         <button
           type="button"
           onClick={toggleVelocityLane}
-          className="pointer-events-auto absolute left-3 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70 transition-fast hover:text-primary"
+          className={`pointer-events-auto absolute left-3 z-10 flex items-center gap-2 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70 transition-fast hover:text-primary ${
+            showVelocityLane ? 'top-2' : 'top-1/2 -translate-y-1/2'
+          }`}
         >
           <span>Velocity</span>
           <svg
@@ -455,7 +466,7 @@ const PianoRoll = () => {
             strokeWidth="1.6"
           >
             {showVelocityLane ? (
-              <path d="M3 7l3-3 3 3" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M7 3l-3 3-3-3" strokeLinecap="round" strokeLinejoin="round" />
             ) : (
               <path d="M3 5l3 3 3-3" strokeLinecap="round" strokeLinejoin="round" />
             )}
@@ -477,6 +488,7 @@ const PianoRoll = () => {
                   msPerBeat={msPerBeat}
                   selectedClipIds={selectedClipIds}
                   onVelocityChange={handleVelocityChange}
+                  subdivisionsPerBeat={subdivisionsPerBeat}
                   isOpen
                 />
               </div>

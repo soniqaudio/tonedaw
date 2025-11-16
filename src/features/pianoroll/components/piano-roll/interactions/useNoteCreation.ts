@@ -3,6 +3,7 @@ import { MUSIC, PIANO_ROLL } from "@/core/constants";
 import type { MidiNoteClip } from "@/core/midi/types";
 import { generateClipId } from "@/core/utils/id";
 import { getActiveTrackId } from "@/core/utils/trackUtils";
+import { getOrCreateEditingPattern, updatePatternClipLengths } from "@/core/utils/patternUtils";
 
 interface UseNoteCreationProps {
   pianoKeys: Array<{ note: string; isBlack: boolean; midi: number }>;
@@ -33,6 +34,7 @@ export const useNoteCreation = ({
         Math.round(pointerMs / msPerBeat / quantizationBeats) * quantizationBeats;
       const startMs = Math.max(0, quantizedBeats * msPerBeat);
       const trackId = getActiveTrackId();
+      const patternId = getOrCreateEditingPattern(); // Auto-create pattern if needed
 
       const clip: MidiNoteClip = {
         id: generateClipId(noteNumber, startMs),
@@ -43,9 +45,16 @@ export const useNoteCreation = ({
         start: startMs,
         duration: defaultDurationBeats * msPerBeat,
         trackId,
+        patternId,
       };
 
       addClip(clip);
+
+      // Update playlist clip length based on pattern content
+      // Use setTimeout to ensure the clip has been added to the store first
+      setTimeout(() => {
+        updatePatternClipLengths(patternId);
+      }, 0);
 
       // Play the note sound immediately
       const { audioEngine } = await import("@/core/audio/audioEngine");

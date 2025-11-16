@@ -9,6 +9,7 @@ interface ActiveNote {
   velocity: number;
   channel: number;
   trackId: string;
+  patternId?: string; // Pattern this note belongs to
 }
 
 export interface DeriveResult {
@@ -42,6 +43,7 @@ const makeClip = (note: ActiveNote, endMs: number): MidiNoteClip => ({
   start: note.startMs,
   duration: Math.max(MIN_DURATION_MS, endMs - note.startMs),
   trackId: resolveTrackId(note.trackId),
+  patternId: note.patternId, // Preserve patternId
 });
 
 const mapKey = (channel: number, noteNumber: number) => `${channel}:${noteNumber}`;
@@ -108,6 +110,7 @@ export const deriveFromEvents = (
         velocity: event.velocity,
         channel: event.channel,
         trackId: assignedTrackId,
+        patternId: event.patternId, // Extract patternId from event
       };
 
       activeNotesById.set(event.noteId, note);
@@ -265,6 +268,7 @@ export const deriveIncremental = (
         velocity: event.velocity,
         channel: event.channel,
         trackId: assignedTrackId,
+        patternId: event.patternId, // Extract patternId from event
       };
 
       const key = mapKey(event.channel, event.noteNumber);

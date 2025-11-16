@@ -1,93 +1,16 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useTrackStore } from "@/core/stores/useTrackStore";
+import { usePatternStore } from "@/core/stores/usePatternStore";
+import { usePlaylistStore } from "@/core/stores/usePlaylistStore";
+import { useViewStore } from "@/core/stores/useViewStore";
+import { getOrCreateTrackForPattern, calculatePatternLength } from "@/core/utils/patternUtils";
 
 const TOTAL_BARS = 16;
 const BAR_WIDTH = 112;
 const ROW_HEIGHT = 64;
-
-const mockTracks = [
-  {
-    name: "Drums",
-    type: "Pattern",
-    badge: "PAT",
-    clips: [
-      { start: 0, length: 4, label: "Intro" },
-      { start: 4, length: 4, label: "Verse" },
-      { start: 12, length: 4, label: "Fill" },
-    ],
-  },
-  {
-    name: "Bass",
-    type: "Audio",
-    badge: "AUDIO",
-    waveform: true,
-    clips: [
-      { start: 0, length: 8, label: "Bassline" },
-      { start: 8, length: 8, label: "Bassline" },
-    ],
-  },
-  {
-    name: "Chords",
-    type: "Pattern",
-    badge: "PAT",
-    clips: [
-      { start: 0, length: 4, label: "Verse" },
-      { start: 4, length: 4, label: "Verse" },
-      { start: 8, length: 8, label: "Hook" },
-    ],
-  },
-  {
-    name: "Lead",
-    type: "Pattern",
-    badge: "PAT",
-    clips: [
-      { start: 4, length: 4, label: "Melody" },
-      { start: 10, length: 3, label: "Drop" },
-      { start: 14, length: 2, label: "Outro" },
-    ],
-  },
-  {
-    name: "Vox",
-    type: "Audio",
-    badge: "AUDIO",
-    waveform: true,
-    clips: [
-      { start: 8, length: 4, label: "Adlibs" },
-      { start: 12, length: 4, label: "FX" },
-    ],
-  },
-  {
-    name: "Pad",
-    type: "Audio",
-    badge: "AUDIO",
-    waveform: true,
-    clips: [
-      { start: 2, length: 6, label: "Ambient" },
-      { start: 10, length: 6, label: "Swell" },
-    ],
-  },
-  {
-    name: "FX",
-    type: "Pattern",
-    badge: "PAT",
-    clips: [
-      { start: 7, length: 1, label: "Riser" },
-      { start: 11, length: 2, label: "Impact" },
-      { start: 15, length: 1, label: "Tail" },
-    ],
-  },
-  {
-    name: "Perc",
-    type: "Audio",
-    badge: "AUDIO",
-    waveform: true,
-    clips: [
-      { start: 4, length: 4, label: "Shaker" },
-      { start: 12, length: 4, label: "Claps" },
-    ],
-  },
-];
 
 const timelineWidth = TOTAL_BARS * BAR_WIDTH;
 
@@ -95,6 +18,78 @@ const timelineWidth = TOTAL_BARS * BAR_WIDTH;
 const patternGradient = "linear-gradient(135deg, hsl(217, 91%, 40%) 0%, hsl(217, 91%, 30%) 50%, hsl(217, 91%, 20%) 100%)";
 
 export function PlaylistView() {
+  const tracks = useTrackStore((state) => state.tracks);
+  const patterns = usePatternStore((state) => state.patterns);
+  const createPattern = usePatternStore((state) => state.actions.createPattern);
+  const playlistClips = usePlaylistStore((state) => state.clips);
+  const getClipsByTrack = usePlaylistStore((state) => state.actions.getClipsByTrack);
+  const [isCreatingPattern, setIsCreatingPattern] = useState(false);
+  const [newPatternName, setNewPatternName] = useState("");
+
+  // Initialize default Pattern 1 with playlist clip if needed
+  useEffect(() => {
+    const { patterns, actions: patternActions } = usePatternStore.getState();
+    const { clips, actions: playlistActions } = usePlaylistStore.getState();
+    const { tracks } = useTrackStore.getState();
+    
+    // Ensure Pattern 1 exists and has a playlist clip
+    const pattern1 = patterns.find((p) => p.id === "pattern-default-1");
+    if (pattern1 && tracks.length > 0) {
+      const track1 = tracks[0];
+      const pattern1Clip = clips.find((c) => c.patternId === pattern1.id);
+      
+      if (!pattern1Clip && track1) {
+        // Create playlist clip for Pattern 1
+        playlistActions.addClip({
+          patternId: pattern1.id,
+          trackId: track1.id,
+          start: 0,
+          length: 1,
+          label: pattern1.name,
+          type: "Pattern",
+        });
+        // Set Pattern 1 as editing
+        patternActions.setEditingPattern(pattern1.id);
+      }
+    }
+  }, []);
+
+  const handleCreatePattern = () => {
+    if (!newPatternName.trim()) return;
+    
+    const patternName = newPatternName.trim();
+    
+    // FL Studio-style: Create pattern on new track
+    const trackId = getOrCreateTrackForPattern();
+    const patternId = createPattern(patternName, trackId);
+    
+    // Create a playlist clip for this pattern
+    const { addClip } = usePlaylistStore.getState().actions;
+    const patternLength = calculatePatternLength(patternId);
+    
+    addClip({
+      patternId,
+      trackId, // New track for each pattern
+      start: 0, // Always at bar 0 on new track
+      length: patternLength, // Dynamic length
+      label: patternName,
+      type: "Pattern",
+    });
+    
+    setNewPatternName("");
+    setIsCreatingPattern(false);
+  };
+
+  // Sort patterns by track order (to maintain visual order)
+  const sortedPatterns = [...patterns].sort((a, b) => {
+    const trackAIndex = tracks.findIndex((t) => t.id === a.trackId);
+    const trackBIndex = tracks.findIndex((t) => t.id === b.trackId);
+    if (trackAIndex !== trackBIndex) {
+      return trackAIndex - trackBIndex;
+    }
+    return a.createdAt - b.createdAt;
+  });
+
   return (
     <div className="flex h-full w-full flex-col bg-base text-foreground">
       <div className="flex flex-1 overflow-hidden">
@@ -102,23 +97,71 @@ export function PlaylistView() {
         <div className="w-52 border-r border-border bg-layer-1">
           {/* Spacer to align with timeline */}
           <div className="h-8 border-b border-subtle" />
-          {mockTracks.map((track, index) => (
-            <div
-              key={track.name}
-              className="flex items-center justify-between border-b border-subtle px-4"
-              style={{ height: `${ROW_HEIGHT}px` }}
-            >
-              <div className="flex flex-col gap-0.5">
-                <p className="text-[13px] font-medium text-foreground">{track.name}</p>
-                <p className="text-[9px] font-medium uppercase tracking-[0.15em] text-disabled">
-                  {track.type}
-                </p>
-              </div>
-              <span className="text-[9px] font-medium uppercase tracking-[0.15em] text-disabled">
-                {track.badge}
-              </span>
+          {tracks.length === 0 ? (
+            <div className="flex items-center justify-center border-b border-subtle px-4 py-8" style={{ height: `${ROW_HEIGHT}px` }}>
+              <p className="text-sm text-tertiary">No tracks</p>
             </div>
-          ))}
+          ) : (
+            <>
+              {/* Show all patterns in a flat list */}
+              {sortedPatterns.map((pattern) => {
+                const track = tracks.find((t) => t.id === pattern.trackId);
+                return (
+                  <div
+                    key={pattern.id}
+                    className="flex items-center justify-between border-b border-subtle px-4 pl-8"
+                    style={{ height: `${ROW_HEIGHT}px` }}
+                  >
+                    <div className="flex flex-col gap-0.5">
+                      <p className="text-[12px] font-medium text-foreground">{pattern.name}</p>
+                      <p className="text-[9px] font-medium uppercase tracking-[0.15em] text-disabled">
+                        PATTERN
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {/* Single "+" button below last pattern */}
+              <div className="border-b border-subtle px-4 pl-8" style={{ height: `${ROW_HEIGHT}px` }}>
+                {isCreatingPattern ? (
+                  <div className="flex items-center gap-2 py-2">
+                    <input
+                      type="text"
+                      value={newPatternName}
+                      onChange={(e) => setNewPatternName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleCreatePattern();
+                        } else if (e.key === "Escape") {
+                          setIsCreatingPattern(false);
+                          setNewPatternName("");
+                        }
+                      }}
+                      placeholder="Pattern name..."
+                      className="h-7 flex-1 rounded-sm border border-subtle bg-layer-1 px-2 text-xs text-foreground placeholder:text-tertiary focus:border-primary focus:outline-none"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCreatePattern}
+                      className="h-7 rounded-sm border border-primary bg-primary px-2 text-xs font-medium text-white hover:bg-primary/90"
+                    >
+                      Add
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingPattern(true)}
+                    className="flex h-full w-full items-center px-2 text-xs font-medium text-tertiary hover:text-foreground"
+                  >
+                    + New Pattern
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Timeline Area */}
@@ -161,71 +204,79 @@ export function PlaylistView() {
               );
             })}
 
-            {mockTracks.map((track, trackIndex) => (
-              <div
-                key={track.name}
-                className="relative border-b border-subtle"
-                style={{ height: `${ROW_HEIGHT}px` }}
-              >
-                {track.clips.map((clip) => {
-                  const clipWidth = Math.max(clip.length * BAR_WIDTH - 8, 64);
-                  const isPattern = track.type === "Pattern";
-                  const isAudio = track.type === "Audio";
-                  const isAutomation = track.type === "Automation";
+            {tracks.map((track) => {
+              const trackClips = getClipsByTrack(track.id);
+              return (
+                <div
+                  key={track.id}
+                  className="relative border-b border-subtle"
+                  style={{ height: `${ROW_HEIGHT}px` }}
+                >
+                  {trackClips.map((clip) => {
+                    const clipWidth = Math.max(clip.length * BAR_WIDTH - 8, 64);
+                    const isPattern = clip.type === "Pattern";
+                    const isAudio = clip.type === "Audio";
 
-                  return (
-                    <div
-                      key={`${track.name}-${clip.label}-${clip.start}`}
-                      className={cn(
-                        "absolute rounded-md border px-3 py-2 text-sm font-semibold shadow-layer-md transition-all hover:shadow-layer-lg flex flex-col",
-                        isPattern && "border-transparent",
-                        isAudio && "border-subtle",
-                        isAutomation && "border-subtle"
-                      )}
-                      style={{
-                        left: clip.start * BAR_WIDTH + 4,
-                        top: "8px",
-                        height: `${ROW_HEIGHT - 16}px`,
-                        width: clipWidth,
-                        background: isPattern
-                          ? patternGradient
-                          : isAudio
-                            ? "linear-gradient(135deg, hsl(0, 0%, 18%) 0%, hsl(0, 0%, 14%) 100%)"
-                            : "linear-gradient(135deg, hsl(0, 0%, 16%) 0%, hsl(0, 0%, 12%) 100%)",
-                      }}
-                    >
-                      <div className="flex items-center justify-between text-xs">
-                        <span className={cn(isPattern ? "text-white" : "text-secondary")}>
-                          {clip.label}
-                        </span>
-                        <span
-                          className={cn(
-                            "text-[10px] uppercase tracking-[0.3em]",
-                            isPattern ? "text-primary/80" : "text-tertiary"
-                          )}
-                        >
-                          {track.badge}
-                        </span>
-                      </div>
-                      {track.waveform ? (
-                        <div className="mt-1 flex-1 overflow-hidden rounded-sm bg-black/20">
-                          <svg viewBox="0 0 120 32" className="h-full w-full opacity-60" role="img">
-                            <title>{track.name} waveform mock</title>
-                            <polyline
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                              strokeLinecap="round"
-                              points="0,16 8,8 16,20 24,6 32,22 40,4 48,26 56,10 64,24 72,8 80,18 88,12 96,20 104,14 112,16 120,15"
-                            />
-                          </svg>
+                    return (
+                      <div
+                        key={clip.id}
+                        className={cn(
+                          "absolute rounded-md border px-3 py-2 text-sm font-semibold shadow-layer-md transition-all hover:shadow-layer-lg flex flex-col cursor-pointer",
+                          isPattern && "border-transparent",
+                          isAudio && "border-subtle"
+                        )}
+                        style={{
+                          left: clip.start * BAR_WIDTH + 4,
+                          top: "8px",
+                          height: `${ROW_HEIGHT - 16}px`,
+                          width: clipWidth,
+                          background: isPattern
+                            ? patternGradient
+                            : isAudio
+                              ? "linear-gradient(135deg, hsl(0, 0%, 18%) 0%, hsl(0, 0%, 14%) 100%)"
+                              : "linear-gradient(135deg, hsl(0, 0%, 16%) 0%, hsl(0, 0%, 12%) 100%)",
+                        }}
+                        onDoubleClick={() => {
+                          // TODO: Open pattern editor if it's a pattern clip
+                          if (clip.patternId) {
+                            usePatternStore.getState().actions.setEditingPattern(clip.patternId);
+                            useViewStore.getState().actions.setActiveView("piano-roll");
+                          }
+                        }}
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <span className={cn(isPattern ? "text-white" : "text-secondary")}>
+                            {clip.label}
+                          </span>
+                          <span
+                            className={cn(
+                              "text-[10px] uppercase tracking-[0.3em]",
+                              isPattern ? "text-primary/80" : "text-tertiary"
+                            )}
+                          >
+                            {isPattern ? "PAT" : "AUDIO"}
+                          </span>
                         </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
+                        {isAudio && (
+                          <div className="mt-1 flex-1 overflow-hidden rounded-sm bg-black/20">
+                            <svg viewBox="0 0 120 32" className="h-full w-full opacity-60" role="img">
+                              <title>{clip.label} waveform mock</title>
+                              <polyline
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                strokeLinecap="round"
+                                points="0,16 8,8 16,20 24,6 32,22 40,4 48,26 56,10 64,24 72,8 80,18 88,12 96,20 104,14 112,16 120,15"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

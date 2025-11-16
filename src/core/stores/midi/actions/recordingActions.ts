@@ -101,6 +101,7 @@ export const createRecordingActions = (
     velocity,
     channel,
     trackId,
+    patternId,
   }: {
     noteId: string;
     noteNumber: number;
@@ -108,6 +109,7 @@ export const createRecordingActions = (
     velocity: number;
     channel: number;
     trackId: string;
+    patternId?: string;
   }) =>
     set((state) => {
       const noteName = midiNumberToName(noteNumber);
@@ -120,6 +122,7 @@ export const createRecordingActions = (
         start: startMs,
         duration: 1,
         trackId,
+        patternId,
         isPreview: true,
       };
 
