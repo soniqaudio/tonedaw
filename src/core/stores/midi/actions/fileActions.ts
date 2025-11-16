@@ -36,13 +36,15 @@ export const createFileActions = (
           const noteId = `clip-${note.midi}-${note.time}-${Math.random().toString(16).slice(2)}`;
           const startMs = note.time * 1000;
           const endMs = (note.time + note.duration) * 1000;
+          // Convert velocity from @tonejs/midi's 0-1 range to our 0-127 range
+          const velocity = Math.round(note.velocity * 127);
 
           events.push({
             id: `evt-${noteId}-on`,
             type: "noteOn",
             timestamp: startMs,
             noteNumber: note.midi,
-            velocity: note.velocity,
+            velocity,
             channel: track.channel ?? 0,
             noteId,
             trackId,
@@ -54,7 +56,7 @@ export const createFileActions = (
             type: "noteOff",
             timestamp: endMs,
             noteNumber: note.midi,
-            velocity: note.velocity,
+            velocity,
             channel: track.channel ?? 0,
             noteId,
             trackId,
@@ -108,10 +110,10 @@ export const createFileActions = (
       return;
     }
 
-    // Filter events by pattern
+    // Filter events by pattern - if event has no patternId, include it (backward compatibility)
     const patternEvents = state.events.filter((event) => {
       if (event.type === "cc") return true; // Include all control events
-      return event.patternId === targetPatternId;
+      return !event.patternId || event.patternId === targetPatternId;
     });
 
     if (patternEvents.length === 0) {
@@ -151,7 +153,7 @@ export const createFileActions = (
             midi: noteInfo.noteNumber,
             time: noteInfo.startTime,
             duration: Math.max(0.001, duration),
-            velocity: noteInfo.velocity / 127, // Normalize to 0-1
+            velocity: noteInfo.velocity / 127, // Convert from our 0-127 range to @tonejs/midi's 0-1 range
           });
 
           noteMap.delete(event.noteId);
