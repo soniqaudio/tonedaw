@@ -23,6 +23,7 @@ class AudioEngine {
   private masterGain: GainNode | null = null;
   private scheduledEvents: Array<{ stop: (when?: number) => void }> = [];
   private sustainActiveByTrack = new Map<string, boolean>();
+  private sustainedNotesByTrack = new Map<string, Set<number>>(); // Track which notes are being sustained
   private metronomeGain: GainNode | null = null;
   private metronomeClickBuffer: AudioBuffer | null = null;
   private metronomeAccentBuffer: AudioBuffer | null = null;
@@ -72,6 +73,7 @@ class AudioEngine {
   stopAll() {
     this.instrument?.stop();
     this.activeNotes.clear();
+    this.sustainedNotesByTrack.clear();
     this.scheduledEvents.forEach((event) => {
       try {
         event.stop();
@@ -197,6 +199,21 @@ class AudioEngine {
   }
 
   noteOff(note: number, trackId?: string) {
+    const normalizedTrackId = trackId ?? "default";
+    const isSustainActive = this.sustainActiveByTrack.get(normalizedTrackId) ?? false;
+
+    // If sustain pedal is down, mark note as sustained instead of stopping it
+    if (isSustainActive) {
+      let sustainedNotes = this.sustainedNotesByTrack.get(normalizedTrackId);
+      if (!sustainedNotes) {
+        sustainedNotes = new Set();
+        this.sustainedNotesByTrack.set(normalizedTrackId, sustainedNotes);
+      }
+      sustainedNotes.add(note);
+      return;
+    }
+
+    // No sustain active, stop the note immediately
     const key = this.composeKey(note, trackId);
     const playingNote = this.activeNotes.get(key);
     if (playingNote?.stop) {
@@ -206,9 +223,25 @@ class AudioEngine {
   }
 
   setSustain(trackId: string, active: boolean) {
-    this.sustainActiveByTrack.set(trackId, active);
-    // Current soundfont-player approach does not implement sustain.
-    // This is a placeholder to maintain API compatibility.
+    const normalizedTrackId = trackId ?? "default";
+    const wasActive = this.sustainActiveByTrack.get(normalizedTrackId) ?? false;
+    this.sustainActiveByTrack.set(normalizedTrackId, active);
+
+    // When pedal is released, stop all sustained notes
+    if (wasActive && !active) {
+      const sustainedNotes = this.sustainedNotesByTrack.get(normalizedTrackId);
+      if (sustainedNotes && sustainedNotes.size > 0) {
+        sustainedNotes.forEach((note) => {
+          const key = this.composeKey(note, trackId);
+          const playingNote = this.activeNotes.get(key);
+          if (playingNote?.stop) {
+            playingNote.stop();
+            this.activeNotes.delete(key);
+          }
+        });
+        sustainedNotes.clear();
+      }
+    }
   }
 
   scheduleEvents(baseTimeSec: number, events: ScheduledPlaybackEvent[]) {
