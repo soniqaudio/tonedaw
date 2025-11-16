@@ -13,6 +13,7 @@ import { useTransportStore } from "@/core/stores/useTransportStore";
 import { useUIStore } from "@/core/stores/useUIStore";
 import type { WorkspaceView } from "@/core/stores/useViewStore";
 import { useViewStore } from "@/core/stores/useViewStore";
+import { usePatternStore } from "@/core/stores/usePatternStore";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -135,7 +136,12 @@ export default function TopBar({ isPlaying, onPlay, onStop }: TopBarProps) {
   const canUndo = useStore(useMidiStore.temporal, (state) => state.pastStates.length > 0);
   const canRedo = useStore(useMidiStore.temporal, (state) => state.futureStates.length > 0);
 
+  const loadFromArrayBuffer = useMidiStore((state) => state.actions.loadFromArrayBuffer);
+  const exportToMidi = useMidiStore((state) => state.actions.exportToMidi);
+  const editingPatternId = usePatternStore((state) => state.editingPatternId);
+
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -163,6 +169,38 @@ export default function TopBar({ isPlaying, onPlay, onStop }: TopBarProps) {
     toggleMetronome();
   };
 
+  const handleImportMidi = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      await loadFromArrayBuffer(arrayBuffer, {
+        mode: "append",
+        targetPatternId: editingPatternId ?? undefined,
+      });
+    } catch (error) {
+      console.error("Failed to import MIDI:", error);
+    }
+
+    // Reset input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleExportMidi = () => {
+    if (!editingPatternId) {
+      console.warn("No pattern selected for export");
+      return;
+    }
+    exportToMidi(editingPatternId);
+  };
+
   const settingsOptions = [
     {
       label: "Ghost notes",
@@ -186,6 +224,14 @@ export default function TopBar({ isPlaying, onPlay, onStop }: TopBarProps) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-layer-2/95 text-sm shadow-layer-sm backdrop-blur-sm">
+      {/* Hidden file input for MIDI import */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".mid,.midi"
+        className="hidden"
+        onChange={handleFileChange}
+      />
       <div className="relative flex h-14 items-center justify-between gap-2 px-4">
         {/* LEFT: App Identity Cluster */}
         <div className="flex items-center gap-2">
@@ -210,20 +256,25 @@ export default function TopBar({ isPlaying, onPlay, onStop }: TopBarProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-48">
-                <DropdownMenuItem>
+                <DropdownMenuItem disabled>
                   New Project
                   <DropdownMenuShortcut>⌘N</DropdownMenuShortcut>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem disabled>
                   Open
                   <DropdownMenuShortcut>⌘O</DropdownMenuShortcut>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem disabled>
                   Save
                   <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  Export
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleImportMidi}>
+                  Import MIDI
+                  <DropdownMenuShortcut>⌘I</DropdownMenuShortcut>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportMidi}>
+                  Export MIDI
                   <DropdownMenuShortcut>⇧⌘E</DropdownMenuShortcut>
                 </DropdownMenuItem>
               </DropdownMenuContent>
