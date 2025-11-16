@@ -77,8 +77,11 @@ export const PianoKeys = ({
     <div className="w-20 border-r border-subtle bg-layer-2/90 backdrop-blur">
       <div className="relative" style={{ height: `${pianoKeys.length * keyHeight}px` }}>
         {pianoKeys.map((key, index) => {
-          // Key is active if either being played back OR clicked
-          const isActive = activeNotes?.has(key.midi) || clickedKeys.has(key.midi);
+          // Key is active if played live, clicked, or under the playhead
+          const isActive =
+            activeNotes?.has(key.midi) ||
+            clickedKeys.has(key.midi) ||
+            playheadActiveNotes.has(key.midi);
           const baseClasses = `absolute flex w-full items-center justify-end pr-3 uppercase transition-fast`;
           const toneClasses = key.isBlack
             ? "bg-[linear-gradient(90deg,rgba(0,0,0,0.65),rgba(0,0,0,0.25))] text-[hsla(0,0%,85%,0.9)] border-b border-medium"
